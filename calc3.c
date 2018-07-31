@@ -104,7 +104,7 @@ Cell * expression(int number ,char ** line){
     return e;
 }
 
-
+/*
 Cell * array(int number ,char ** line){
     Cell * c;
     Cell * e;
@@ -122,7 +122,7 @@ Cell * array(int number ,char ** line){
         e=c;
     }
     return e;
-}
+}*/
 /*
 Cell * subtract(char ** line){
     Cell * c;
