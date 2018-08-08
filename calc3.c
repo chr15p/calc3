@@ -18,10 +18,10 @@ typedef struct _cell{
 
 
 
-Cell *plus(char ** line);
-Cell *subtract(char ** line);
-//Cell *number(char ** line);
-Cell *number(int number, char ** line);
+Cell *plus(char ** statement);
+Cell *subtract(char ** statement);
+//Cell *number(char ** statement);
+Cell *number(int number, char ** statement);
 double eval_plus(Cell *c);
 double eval_subtract(Cell *c);
 double eval_value(Cell *c);
@@ -33,48 +33,48 @@ double evaluate(Cell* c);
 double eval_avg(Cell *c);
 double eval_max(Cell *c);
 
-Cell * expression(int number ,char ** line);
+Cell * expression(int number ,char ** statement);
 
 
-struct ops {
+struct operator {
     char * symbol;
     double (* eval)(Cell *);
 };
 
 
-struct ops addition[]={
+struct operator addition[]={
     {"-", &eval_subtract},
     {"+", &eval_plus},
     {NULL,NULL}
 };
 
-struct ops multiply[]={
+struct operator multiply[]={
     {"*", &eval_multiply},
     {"/", &eval_divide},
     {NULL,NULL}
 };
 
-struct ops power[]={
+struct operator power[]={
     {"^", eval_power},
     {NULL,NULL}
 };
 
-struct ops value[]={
+struct operator value[]={
     {"", &eval_value},
     {NULL,NULL}
 };
 
-struct ops symboltable[]={
+struct operator symboltable[]={
     {"avg",&eval_avg},
     {"max",&eval_max}
 };
 
-struct levels {
-    Cell* (* parse)(int num,char **line);
-    struct ops *value;
+struct precedencelevel {
+    Cell* (* parse)(int num,char **statement);
+    struct operator *value;
 };
 
-struct levels codes[] = {
+struct precedencelevel precedence[] = {
     { &expression, addition},
     { &expression, multiply}, 
     { &expression, power}, 
@@ -84,18 +84,18 @@ struct levels codes[] = {
 
 
 
-char ** ltrim(char ** line){
-    while((**line) == ' ' && (**line) != 0){
-        (*line)++;
+char ** ltrim(char ** statement){
+    while((**statement) == ' ' && (**statement) != 0){
+        (*statement)++;
     }
-    return line;
+    return statement;
 }
 
 
-char is_symbol(char* token,char **line){
-    line = ltrim(line);
+char is_symbol(char* token,char **statement){
+    statement = ltrim(statement);
     int len=strlen(token);
-    if((len > 0) && (strncmp(*line,token,len)==0)){
+    if((len > 0) && (strncmp(*statement,token,len)==0)){
         return 1;
     }
     return 0;
@@ -121,15 +121,15 @@ Cell * new_cell(int len){
 }
 
 
-//double (*(Cell *)) getevalfuction(line,struct ops *value){
+//double (*(Cell *)) getevalfuction(statement,struct operator *value){
 //typedef double (*evalfunc)(Cell *);
-//evalfunc getevalfuction(line,struct ops *value){
-//double (*evalfunc)(Cell *) getevalfuction(line,struct ops *value){
-int getevalfuction(char **line,struct ops *value){
+//evalfunc getevalfuction(statement,struct operator *value){
+//double (*evalfunc)(Cell *) getevalfuction(statement,struct operator *value){
+int getevalfuction(char **statement,struct operator *value){
     int x=0;
 
     while(value[x].symbol != NULL){
-        if(is_symbol(value[x].symbol, line)){
+        if(is_symbol(value[x].symbol, statement)){
             return x;
         }
         x++;
@@ -138,107 +138,107 @@ int getevalfuction(char **line,struct ops *value){
 }
 
 
-Cell * expression(int level,char **line){
+Cell * expression(int level,char **statement){
     Cell * c;
     Cell * e;
     int x=0;
 
-    //printf("expression level=%d line=%s\n",level,*line);
+    //printf("expression level=%d statement=%s\n",level,*statement);
 
-    e = codes[level].parse(level+1,line);
-    while((x=getevalfuction(line,codes[level].value )) != -1){
-        (*line) += 1;
+    e = precedence[level].parse(level+1,statement);
+    while((x=getevalfuction(statement,precedence[level].value )) != -1){
+        (*statement) += 1;
         c = new_cell(2);
-        c->operator = codes[level].value[x].eval;
+        c->operator = precedence[level].value[x].eval;
         c->operand[0] = e; 
-        c->operand[1] = codes[level].parse(level+1,line);
-        //printf("returned to level=%d line=%s\n",level,*line);
+        c->operand[1] = precedence[level].parse(level+1,statement);
+        //printf("returned to level=%d statement=%s\n",level,*statement);
         e=c;
     }
-    //printf("exit expression level=%d line=%s\n",level,*line);
+    //printf("exit expression level=%d statement=%s\n",level,*statement);
     return e;
 }
 
 
-Cell * array(char ** line){
+Cell * array(char ** statement){
     Cell * c;
 
-    //printf("subtract=%s\n",*line);
-    //e = opcodes[number+1].parse(number+1,line);
+    //printf("subtract=%s\n",*statement);
+    //e = opprecedence[number+1].parse(number+1,statement);
     c = new_cell(1);
-    c->operand[0] = codes[0].parse(0,line);
+    c->operand[0] = precedence[0].parse(0,statement);
         //c->operator="-";
-    //c->operator=opcodes[number].eval;
+    //c->operator=opprecedence[number].eval;
 //    c->operand[0] = e; 
-    //printf("array=%s\n",*line);
-    while(strncmp(*line,",",1)==0){
-        //printf("array=%s\n",*line);
-        (*line) += 1;
+    //printf("array=%s\n",*statement);
+    while(strncmp(*statement,",",1)==0){
+        //printf("array=%s\n",*statement);
+        (*statement) += 1;
         //c->operand = reallocarray(c->value, c->length+1, sizeof(Cell*));
         c->length++;
         c->operand = (Cell **) realloc(c->operand, (c->length)*sizeof(Cell*));
-        c->operand[(c->length)-1] = codes[0].parse(0,line);
+        c->operand[(c->length)-1] = precedence[0].parse(0,statement);
     }
     return c;
 }
 
 
-//Cell * number(char ** line){
-Cell * number(int num, char ** line){
+//Cell * number(char ** statement){
+Cell * number(int num, char ** statement){
     char * endptr;
     Cell * c;
     size_t len;
 
-    //printf("number=%s\n",*line);
-    line = ltrim(line);
-    double value = strtod(*line,&endptr);	//try and read a number
+    //printf("number=%s\n",*statement);
+    statement = ltrim(statement);
+    double value = strtod(*statement,&endptr);	//try and read a number
     //printf("value=%e\n",value);
 
-	if(*line != endptr){	
+	if(*statement != endptr){	
         //printf("a\n");
-        *line = endptr;
+        *statement = endptr;
         c = new_cell(0);
         //c->operator = 0;
         c->operator = &eval_value;
         //printf("value=%e\n", value);
         c->value = value;
         c->length = 1;
-    }else if(**line=='('){
+    }else if(**statement=='('){
         //printf("b\n");
-        (*line)++;
-        //printf("line1=%s\n",*line);
-        c = codes[0].parse(0,line);
-        if(**line!=')'){
+        (*statement)++;
+        //printf("statement1=%s\n",*statement);
+        c = precedence[0].parse(0,statement);
+        if(**statement!=')'){
     		fprintf(stderr,"unmatched parenthesis\n");
         }
-        (*line)++;
-        //printf("line2=%s\n",*line);
-    }else if((len=strspn(*line,"abcdefghijklmnopqrstuvwxyz"))!=0){
+        (*statement)++;
+        //printf("statement2=%s\n",*statement);
+    }else if((len=strspn(*statement,"abcdefghijklmnopqrstuvwxyz"))!=0){
         //printf("c\n");
-        //printf("len=%ld line=%s\n",len,*line);
-        if(*((*line)+len)=='('){
+        //printf("len=%ld statement=%s\n",len,*statement);
+        if(*((*statement)+len)=='('){
             //run function
             int i=0;
-            while((symboltable[i].symbol!=NULL)&&(strncmp(symboltable[i].symbol,*line,len)!=0)){
+            while((symboltable[i].symbol!=NULL)&&(strncmp(symboltable[i].symbol,*statement,len)!=0)){
                 i++;
             }
-            (*line)+=len+1;
-            c = array(line);
+            (*statement)+=len+1;
+            c = array(statement);
             c->operator = symboltable[i].eval;
-            if(**line!=')'){
+            if(**statement!=')'){
     		    fprintf(stderr,"unmatched parenthesis\n");
             }
-            (*line)++;
-        }else if(*((*line)+len)=='='){
-            printf("= line=%s\n",*line);
+            (*statement)++;
+        }else if(*((*statement)+len)=='='){
+            printf("= statement=%s\n",*statement);
             //assign to symbol
         }else{
-		fprintf(stderr,"failed to comprehend at %s\n",*line);
+		fprintf(stderr,"failed to comprehend at %s\n",*statement);
 
         }
-        //printf("line2=%s\n",*line);
+        //printf("statement2=%s\n",*statement);
     }else{
-		fprintf(stderr,"failed to read value at %s\n",*line);
+		fprintf(stderr,"failed to read value at %s\n",*statement);
 		exit(1);
     }
     //printf("return \n");
@@ -312,16 +312,16 @@ int main(int argc, char* argv[]){
     for(int i=1;i<argc;i++){
         arglen+=strlen(argv[i]);
     }
-    char * line = calloc(sizeof(char),arglen);
+    char * statement = calloc(sizeof(char),arglen);
     for(int i=1;i<argc;i++){
-        strcat(line,argv[i]); 
+        strcat(statement,argv[i]); 
     }
 
-//    char *line=" 1+1-3+max(1,5,3)";
-    //char *line=" 1-2+3";
-    printf("%s\n",line);
-//    Cell* c = subtract(&line);
-    Cell* c = codes[0].parse(0,&line);
+//    char *statement=" 1+1-3+max(1,5,3)";
+    //char *statement=" 1-2+3";
+    printf("%s\n",statement);
+//    Cell* c = subtract(&statement);
+    Cell* c = precedence[0].parse(0,&statement);
 
     printf("=%lf\n",evaluate(c));
     
