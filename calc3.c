@@ -33,6 +33,8 @@ double evaluate(Cell* c);
 
 double eval_avg(Cell *c);
 double eval_max(Cell *c);
+double eval_min(Cell *c);
+
 
 Cell * expression(int number ,char ** statement);
 Cell * postfix_expression(int number ,char ** statement);
@@ -75,7 +77,8 @@ struct operator value[]={
 
 struct operator symboltable[]={
     {"avg",&eval_avg},
-    {"max",&eval_max}
+    {"max",&eval_max},
+    {"min",&eval_min}
 };
 
 struct precedencelevel {
@@ -90,7 +93,6 @@ struct precedencelevel precedence[] = {
     { &postfix_expression, increment}, 
     { &number, value} 
 };
-
 
 
 
@@ -302,6 +304,22 @@ double eval_max(Cell *c){
 
     return max;
 }
+
+double eval_min(Cell *c){
+    double min=0;
+    double cur=0;
+    for(int i=0; i < c->length; i++){
+        cur = evaluate(c->operand[i]);
+        //printf("cur=%e min=%e\n",cur,min);
+        if((i==0) || (cur < min)){
+            min=cur;
+        }
+    }
+    //printf("min=%e\n",min);
+
+    return min;
+}
+
 
 double eval_plus(Cell *c){
     return evaluate(c->operand[0]) + evaluate(c->operand[1]);
