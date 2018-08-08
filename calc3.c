@@ -12,7 +12,6 @@ typedef struct _cell{
    struct _cell ** operand;
    double value;
    unsigned int length;
-   //char * operator;
    double (* operator)(struct _cell *);
 } Cell;
 
@@ -20,7 +19,6 @@ typedef struct _cell{
 
 Cell *plus(char ** statement);
 Cell *subtract(char ** statement);
-//Cell *number(char ** statement);
 Cell *number(int number, char ** statement);
 double eval_plus(Cell *c);
 double eval_subtract(Cell *c);
@@ -28,12 +26,16 @@ double eval_value(Cell *c);
 double eval_multiply(Cell *c);
 double eval_divide(Cell *c);
 double eval_power(Cell *c);
+double eval_mod(Cell *c);
+double eval_increment(Cell *c);
+double eval_decrement(Cell *c);
 double evaluate(Cell* c);
 
 double eval_avg(Cell *c);
 double eval_max(Cell *c);
 
 Cell * expression(int number ,char ** statement);
+Cell * postfix_expression(int number ,char ** statement);
 
 
 struct operator {
@@ -51,11 +53,18 @@ struct operator addition[]={
 struct operator multiply[]={
     {"*", &eval_multiply},
     {"/", &eval_divide},
+    {"%", &eval_mod},
     {NULL,NULL}
 };
 
 struct operator power[]={
     {"^", eval_power},
+    {NULL,NULL}
+};
+
+struct operator increment[]={
+    {"++", eval_increment},
+    {"--", eval_decrement},
     {NULL,NULL}
 };
 
@@ -78,6 +87,7 @@ struct precedencelevel precedence[] = {
     { &expression, addition},
     { &expression, multiply}, 
     { &expression, power}, 
+    { &postfix_expression, increment}, 
     { &number, value} 
 };
 
@@ -143,15 +153,37 @@ Cell * expression(int level,char **statement){
     Cell * e;
     int x=0;
 
-    //printf("expression level=%d statement=%s\n",level,*statement);
-
-    e = precedence[level].parse(level+1,statement);
+    //printf("elevel=%d symbol=%s\n",level,precedence[level].value[x].symbol);
+    e = precedence[level+1].parse(level+1,statement);
+    //printf("elevel=%d symbol=%s\n",level,precedence[level].value[x].symbol);
     while((x=getevalfuction(statement,precedence[level].value )) != -1){
         (*statement) += 1;
         c = new_cell(2);
         c->operator = precedence[level].value[x].eval;
         c->operand[0] = e; 
-        c->operand[1] = precedence[level].parse(level+1,statement);
+        c->operand[1] = precedence[level+1].parse(level+1,statement);
+        //printf("returned to level=%d statement=%s\n",level,*statement);
+        e=c;
+    }
+    //printf("exit expression level=%d statement=%s\n",level,*statement);
+    return e;
+}
+
+
+Cell * postfix_expression(int level,char **statement){
+    Cell * c;
+    Cell * e;
+    int x=0;
+
+    //printf("plevel=%d symbol=%s\n",level,precedence[level].value[x].symbol);
+    e = precedence[level+1].parse(level+1,statement);
+    //printf("plevel=%d symbol=%s\n",level,precedence[level].value[x].symbol);
+    while((x = getevalfuction(statement,precedence[level].value )) != -1){
+        //printf("inside to postfix_expression %d\n",x);
+        (*statement) += strlen(precedence[level].value[x].symbol);
+        c = new_cell(1);
+        c->operator = precedence[level].value[x].eval;
+        c->operand[0] = e; 
         //printf("returned to level=%d statement=%s\n",level,*statement);
         e=c;
     }
@@ -287,10 +319,23 @@ double eval_divide(Cell *c){
     return evaluate(c->operand[0]) / evaluate(c->operand[1]);
 }
 
+double eval_mod(Cell *c){
+    return (int) evaluate(c->operand[0]) % (int)evaluate(c->operand[1]);
+}
+
+double eval_increment(Cell *c){
+    double x = evaluate(c->operand[0]);
+    return ++x;
+}
+
+double eval_decrement(Cell *c){
+    double x = evaluate(c->operand[0]);
+    return --x;
+}
+
 double eval_power(Cell *c){
     return pow(evaluate(c->operand[0]),evaluate(c->operand[1]));
 }
-
 double eval_value(Cell *c){
     return c->value;
 }

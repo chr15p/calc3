@@ -2,4 +2,4 @@ A basic command line calculator mainly written to investigate how infix (and fun
 
 It parses the expression passed as arguements into s-expressions, and then recursivly evaluates them
 
-Currently supports + - * / and ^  plus brackets and  avg() and max() functions. I may add variables and user defined functions as the next step
+Currently supports + - * / % and ^  plus brackets, postfix ++ and -- (but not prefix versions) and  avg() and max() functions. I may add variables and user defined functions as the next step
